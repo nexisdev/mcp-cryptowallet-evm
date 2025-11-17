@@ -1,0 +1,253 @@
+{
+  "generatedAt": "2025-11-17T11:40:00Z",
+  "modules": [
+    {
+      "name": "wallet",
+      "category": "evm",
+      "tools": [
+        "wallet_provider_set",
+        "wallet_create_random",
+        "wallet_from_private_key",
+        "wallet_from_mnemonic",
+        "wallet_from_encrypted_json",
+        "wallet_encrypt",
+        "wallet_get_address",
+        "wallet_get_public_key",
+        "wallet_get_private_key",
+        "wallet_get_mnemonic",
+        "wallet_get_balance",
+        "wallet_get_chain_id",
+        "wallet_get_gas_price",
+        "wallet_get_transaction_count",
+        "wallet_call",
+        "wallet_send_transaction",
+        "wallet_sign_transaction",
+        "wallet_populate_transaction",
+        "wallet_sign_message",
+        "wallet_sign_typed_data",
+        "wallet_verify_message",
+        "wallet_verify_typed_data",
+        "provider_get_block",
+        "provider_get_transaction",
+        "provider_get_transaction_receipt",
+        "provider_get_code",
+        "provider_get_storage_at",
+        "provider_estimate_gas",
+        "provider_get_logs",
+        "provider_get_ens_resolver",
+        "provider_lookup_address",
+        "provider_resolve_name",
+        "network_get_network",
+        "network_get_block_number",
+        "network_get_fee_data"
+      ]
+    },
+    {
+      "name": "defi",
+      "category": "trading",
+      "tools": [
+        "defi_provider_set",
+        "defi_provider_info",
+        "defi_swap_price",
+        "defi_swap_quote",
+        "defi_supported_chains",
+        "defi_liquidity_sources",
+        "defi_token_price",
+        "defi_coingecko_networks",
+        "defi_supported_dexes",
+        "defi_trending_pools",
+        "defi_convert_wei_to_unit",
+        "defi_convert_unit_to_wei"
+      ]
+    },
+    {
+      "name": "aave",
+      "category": "lending",
+      "tools": [
+        "aave_provider_set",
+        "aave_provider_info",
+        "aave_reserves_overview",
+        "aave_analyze_liquidity",
+        "aave_user_positions",
+        "aave_user_health",
+        "aave_namespace_info"
+      ]
+    },
+    {
+      "name": "bsc",
+      "category": "evm",
+      "tools": [
+        "bsc_provider_set",
+        "bsc_transfer_native",
+        "bsc_transfer_token",
+        "bsc_token_balance"
+      ]
+    },
+    {
+      "name": "wormhole",
+      "category": "bridge",
+      "tools": [
+        "wormhole_provider_set",
+        "wormhole_bridge_token",
+        "wormhole_route_status",
+        "wormhole_supported_routes",
+        "wormhole_transfer_status",
+        "wormhole_supported_chains"
+      ]
+    },
+    {
+      "name": "debank",
+      "category": "portfolio",
+      "tools": [
+        "debank_provider_set",
+        "debank_portfolio_overview",
+        "debank_protocol_list"
+      ]
+    },
+    {
+      "name": "cryptopanic",
+      "category": "news",
+      "tools": [
+        "cryptopanic_provider_set",
+        "cryptopanic_latest_news"
+      ]
+    },
+    {
+      "name": "web3research",
+      "category": "analytics",
+      "tools": [
+        "web3research_provider_set",
+        "web3research_search_assets",
+        "web3research_asset_details",
+        "web3research_trending"
+      ]
+    },
+    {
+      "name": "cryptoprojects",
+      "category": "analytics",
+      "tools": [
+        "cryptoprojects_provider_set",
+        "cryptoprojects_protocol_details",
+        "cryptoprojects_top_protocols"
+      ]
+    },
+    {
+      "name": "pumpswap",
+      "category": "solana",
+      "tools": [
+        "pumpswap_provider_set",
+        "pumpswap_price",
+        "pumpswap_quote",
+        "pumpswap_token_info"
+      ]
+    },
+    {
+      "name": "aster",
+      "category": "derivatives",
+      "tools": [
+        "aster_kline",
+        "aster_order_book_ticker",
+        "aster_order_book",
+        "aster_recent_trades"
+      ]
+    },
+    {
+      "name": "alphaArena",
+      "category": "perps",
+      "tools": [
+        "alpha_place_order",
+        "alpha_close_position",
+        "alpha_cancel_open_orders",
+        "alpha_account_info",
+        "alpha_market_state"
+      ]
+    },
+    {
+      "name": "dexPools",
+      "category": "defi-analytics",
+      "tools": [
+        "dex_get_supported_networks",
+        "dex_get_supported_dexes_by_network",
+        "dex_get_new_pools",
+        "dex_get_new_pools_by_network",
+        "dex_get_pool_details",
+        "dex_get_trending_pools",
+        "dex_get_trending_pools_by_network",
+        "dex_get_top_pools_by_network",
+        "dex_get_top_pools_by_dex",
+        "dex_search_pools"
+      ]
+    },
+    {
+      "name": "polymarket",
+      "category": "predictions",
+      "tools": [
+        "poly_search_events",
+        "poly_get_events",
+        "poly_get_markets"
+      ]
+    },
+    {
+      "name": "hyperliquidInfo",
+      "category": "perps",
+      "tools": [
+        "hyperinfo_get_user_state",
+        "hyperinfo_get_user_open_orders",
+        "hyperinfo_get_all_mids",
+        "hyperinfo_get_user_trade_history",
+        "hyperinfo_get_perp_dexs",
+        "hyperinfo_get_coin_funding_history",
+        "hyperinfo_get_user_funding_history",
+        "hyperinfo_get_l2_snapshot",
+        "hyperinfo_get_candles_snapshot",
+        "hyperinfo_get_user_fees",
+        "hyperinfo_get_user_staking_summary",
+        "hyperinfo_get_user_staking_rewards",
+        "hyperinfo_get_user_order_by_oid",
+        "hyperinfo_get_user_order_by_cloid",
+        "hyperinfo_get_user_sub_accounts",
+        "hyperinfo_get_perp_metadata",
+        "hyperinfo_get_spot_metadata"
+      ]
+    },
+    {
+      "name": "freqtrade",
+      "category": "trading-bot",
+      "tools": [
+        "freq_fetch_market_data",
+        "freq_fetch_bot_status",
+        "freq_fetch_profit",
+        "freq_fetch_balance",
+        "freq_fetch_performance",
+        "freq_fetch_whitelist",
+        "freq_fetch_blacklist",
+        "freq_fetch_trades",
+        "freq_fetch_config",
+        "freq_fetch_locks",
+        "freq_place_trade",
+        "freq_start_bot",
+        "freq_stop_bot",
+        "freq_reload_config",
+        "freq_add_blacklist",
+        "freq_delete_blacklist",
+        "freq_delete_lock"
+      ]
+    },
+    {
+      "name": "hyperliquidWhalealert",
+      "category": "perps-alerts",
+      "tools": [
+        "whale_get_whale_alerts"
+      ]
+    },
+    {
+      "name": "walletInspector",
+      "category": "analytics",
+      "tools": [
+        "inspector_get_wallet_balance",
+        "inspector_get_wallet_activity",
+        "inspector_get_wallet_transactions"
+      ]
+    }
+  ]
+}

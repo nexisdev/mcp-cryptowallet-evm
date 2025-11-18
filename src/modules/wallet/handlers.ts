@@ -2,6 +2,10 @@ import { UserError } from "fastmcp";
 import { ethers } from "ethers";
 import { generateMnemonic } from "@scure/bip39";
 import { formatKeyValue, getProvider, getWallet, setProvider } from "./utils.js";
+import {
+  bridgeAssetsViaThirdweb,
+  swapTokensViaThirdweb,
+} from "./thirdweb.js";
 import type { ServerContext } from "../../server/types.js";
 
 type WalletContext = ServerContext;
@@ -474,6 +478,106 @@ export const verifyTypedDataHandler = async (
   return formatKeyValue("Typed data verification", {
     isValid,
     recoveredAddress: recovered,
+  });
+};
+
+export const bridgeAssetsHandler = async (
+  params: {
+    wallet?: string;
+    password?: string;
+    from?: string;
+    chainId: number;
+    toChainId: number;
+    toAddress: string;
+    token?: string;
+    amount: string;
+    minAmountOut?: string;
+    slippageBps?: number;
+    metadata?: Record<string, unknown>;
+  },
+  context: WalletContext,
+): Promise<string> => {
+  if (!params.toAddress || !params.amount) {
+    throw new UserError("toAddress and amount are required for bridge execution.");
+  }
+
+  const wallet = await getWallet(context, params.wallet, params.password);
+  const fromAddress = params.from ?? wallet.address;
+
+  const tokenAddress =
+    params.token && params.token.trim().length > 0
+      ? params.token.trim()
+      : "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+
+  const result = await bridgeAssetsViaThirdweb({
+    from: fromAddress,
+    sourceChainId: params.chainId,
+    destinationChainId: params.toChainId,
+    tokenAddress,
+    amountWei: params.amount,
+    minAmountWei: params.minAmountOut,
+    slippageBps: params.slippageBps,
+    metadata: {
+      ...(params.metadata ?? {}),
+      destinationAddress: params.toAddress,
+    },
+  });
+
+  return formatKeyValue("Thirdweb bridge request submitted", {
+    transactionId: result.transactionId,
+    sourceChainId: params.chainId,
+    destinationChainId: params.toChainId,
+    from: fromAddress,
+    to: params.toAddress,
+    tokenAddress,
+    amountWei: params.amount,
+    minAmountWei: params.minAmountOut ?? "not provided",
+    steps: result.steps ? JSON.stringify(result.steps) : "not provided",
+  });
+};
+
+export const swapTokensHandler = async (
+  params: {
+    wallet?: string;
+    password?: string;
+    from?: string;
+    chainId: number;
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    minAmountOut?: string;
+    slippageBps?: number;
+    metadata?: Record<string, unknown>;
+  },
+  context: WalletContext,
+): Promise<string> => {
+  if (!params.tokenIn || !params.tokenOut || !params.amountIn) {
+    throw new UserError("tokenIn, tokenOut, and amountIn are required for swaps.");
+  }
+
+  const wallet = await getWallet(context, params.wallet, params.password);
+  const fromAddress = params.from ?? wallet.address;
+
+  const result = await swapTokensViaThirdweb({
+    from: fromAddress,
+    chainId: params.chainId,
+    tokenIn: params.tokenIn,
+    tokenOut: params.tokenOut,
+    amountInWei: params.amountIn,
+    minAmountOutWei: params.minAmountOut,
+    slippageBps: params.slippageBps,
+    metadata: params.metadata,
+  });
+
+  return formatKeyValue("Thirdweb swap request submitted", {
+    transactionId: result.transactionId,
+    chainId: params.chainId,
+    from: fromAddress,
+    tokenIn: params.tokenIn,
+    tokenOut: params.tokenOut,
+    amountInWei: params.amountIn,
+    minAmountOutWei: params.minAmountOut ?? "not provided",
+    steps: result.steps ? JSON.stringify(result.steps) : "not provided",
   });
 };
 

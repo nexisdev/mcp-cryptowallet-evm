@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { beforeEach, describe, expect, test, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, test, jest } from "@jest/globals";
 import { Context } from "fastmcp";
 import { Wallet, __walletMocks } from "ethers";
 import { walletToolDefinitions } from "../../../src/modules/wallet/index.js";
@@ -11,6 +11,8 @@ jest.mock("@scure/bip39", () => ({
 
 const PRIVATE_KEY =
   "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+const ORIGINAL_FETCH = global.fetch;
 
 const sampleArgs: Record<string, any> = {
   wallet_provider_set: { providerURL: "https://eth.llamarpc.com" },
@@ -110,6 +112,25 @@ const sampleArgs: Record<string, any> = {
   network_get_network: {},
   network_get_block_number: {},
   network_get_fee_data: {},
+  wallet_bridge_assets: {
+    wallet: PRIVATE_KEY,
+    chainId: 1,
+    toChainId: 137,
+    toAddress: "0x2222222222222222222222222222222222222222",
+    token: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    amount: "1000000",
+    minAmountOut: "980000",
+    slippageBps: 50,
+  },
+  wallet_swap_tokens: {
+    wallet: PRIVATE_KEY,
+    chainId: 8453,
+    tokenIn: "0x4200000000000000000000000000000000000006",
+    tokenOut: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    amountIn: "500000000000000000",
+    minAmountOut: "490000000",
+    slippageBps: 30,
+  },
 };
 
 const createContext = (): Context<Record<string, unknown>> => ({
@@ -130,6 +151,25 @@ beforeEach(() => {
   __testing.resetProviders();
   jest.clearAllMocks();
   process.env.PRIVATE_KEY = PRIVATE_KEY;
+  process.env.THIRDWEB_SECRET_KEY = "test-secret";
+  process.env.THIRDWEB_API_BASE_URL = "https://api.thirdweb.com";
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      result: {
+        transactionId: "txn_mock_123",
+        steps: [{ type: "signature", description: "Sign transaction" }],
+      },
+    }),
+  }) as unknown as typeof fetch;
+});
+
+afterEach(() => {
+  if (ORIGINAL_FETCH) {
+    global.fetch = ORIGINAL_FETCH;
+  }
+  delete process.env.THIRDWEB_SECRET_KEY;
+  delete process.env.THIRDWEB_API_BASE_URL;
 });
 
 describe("wallet tool handlers", () => {

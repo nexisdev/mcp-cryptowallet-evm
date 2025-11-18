@@ -294,9 +294,9 @@ The server will register tools prefixed with `alpha_*` after startup.
 
 ## Railway Deployment
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new?template=https://github.com/dcSpark/mcp-cryptowallet-evm)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new?template=https://raw.githubusercontent.com/0xnexis/mcp-cryptowallet-evm/main/templates/railway.template.json)
 
-[`railway.json`](railway.json) now describes a complete three-service stack that Railway can provision in a single run:
+[`templates/railway.template.json`](templates/railway.template.json) packages a complete Railway stack so the FastMCP server, Redis cache layer, and FastAPI observability service are created together. The template delegates build commands and per-service configuration to [`railway.json`](railway.json), which keeps install/build/start definitions source-controlled alongside the application code.citeturn14search0turn15search0
 - **`fastmcp-http`** – builds the FastMCP server with `npm ci && npm run build`, runs HTTP Stream transport on the platform port, and exposes `/mcp` plus `/health` for probes.
 - **`fastapi-status`** – launches the FastAPI companion from `external/fastapi-layer` and consumes the FastMCP status endpoint over Railway’s private DNS (`http://fastmcp-http.railway.internal:8090`).
 - **`redis`** – provisions the managed Redis plugin and injects its connection string into `fastmcp-http` via the `${{redis.REDIS_URL}}` interpolation so storage is stateful out of the box.

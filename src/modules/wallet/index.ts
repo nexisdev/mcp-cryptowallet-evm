@@ -220,6 +220,26 @@ export const walletToolDefinitions: WalletToolDefinition<any>[] = [
     requiredTier: "free",
   },
   {
+    name: "wallet_bridge_assets",
+    description:
+      "Bridge assets across supported chains using thirdweb bridge routes. Requires configured thirdweb credentials.",
+    schema: WalletSchemas.bridgeAssets,
+    execute: handlers.bridgeAssetsHandler,
+    timeoutMs: 180_000,
+    requiredTier: "pro",
+    featureName: "Cross-chain bridge execution",
+  },
+  {
+    name: "wallet_swap_tokens",
+    description:
+      "Perform on-chain token swaps via thirdweb routing on the configured network. Requires configured thirdweb credentials.",
+    schema: WalletSchemas.swapTokens,
+    execute: handlers.swapTokensHandler,
+    timeoutMs: 120_000,
+    requiredTier: "pro",
+    featureName: "On-chain swap execution",
+  },
+  {
     name: "provider_get_block",
     description: "Retrieve block information from the configured provider.",
     schema: WalletSchemas.providerBlock,

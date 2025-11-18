@@ -37,6 +37,14 @@ type DefiSchema =
   | (typeof DefiSchemas)[keyof typeof DefiSchemas]
   | typeof ProviderInfoSchema;
 
+type BivariantCacheKey<Schema extends z.ZodTypeAny> = {
+  bivarianceHack(args: z.infer<Schema>): string;
+}["bivarianceHack"];
+
+type BivariantExecute<Schema extends z.ZodTypeAny> = {
+  bivarianceHack(args: z.infer<Schema>, context: ServerContext): Promise<ToolResult>;
+}["bivarianceHack"];
+
 type DefiToolDefinition<Schema extends z.ZodTypeAny> = {
   name: string;
   description: string;
@@ -46,9 +54,9 @@ type DefiToolDefinition<Schema extends z.ZodTypeAny> = {
   featureName?: string;
   cache?: {
     ttlMs: number;
-    key: (args: z.infer<Schema>) => string;
+    key: BivariantCacheKey<Schema>;
   };
-  execute: (args: z.infer<Schema>, context: ServerContext) => Promise<ToolResult>;
+  execute: BivariantExecute<Schema>;
 };
 
 const READ_ONLY_HINT = { readOnlyHint: true } as const;
@@ -270,9 +278,7 @@ const adaptDefiTool = <Schema extends DefiSchema>(
 };
 
 export const defiToolDefinitions: ReadonlyArray<StoredDefiToolDefinition> =
-  rawDefiTools.map((tool) => adaptDefiTool(tool as DefiToolDefinition<DefiSchema>)) as ReadonlyArray<
-    StoredDefiToolDefinition
-  >;
+  rawDefiTools.map((tool) => adaptDefiTool(tool));
 
 const createMiddlewares = <TArgs, TContext extends ServerContext>(
   baseMiddlewares: ToolMiddleware<TArgs, TContext>[],

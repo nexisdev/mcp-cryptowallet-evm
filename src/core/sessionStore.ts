@@ -1,10 +1,12 @@
 import { Context } from "fastmcp";
+import type { SessionMetadata } from "../server/types.js";
 import { getRuntime } from "./runtime.js";
 
 type SessionContext = Context<Record<string, unknown> | undefined>;
 
 const DEFAULT_SESSION_KEY = "stdio";
 const TOOL_USAGE_SCOPE = "tool-usage";
+const SESSION_METADATA_SCOPE = "session-metadata";
 
 type StorageValue<T> = {
   value: T;
@@ -29,9 +31,16 @@ const defaultUsage: ToolUsageMetrics = {
   tools: {},
 };
 
+const sanitizeSegment = (value: string): string => {
+  return value.replace(/[^a-z0-9._-]/gi, "-");
+};
+
 const resolveSessionKey = (context: SessionContext, scope: string, key: string) => {
   const sessionSegment = context.sessionId ?? DEFAULT_SESSION_KEY;
-  return `${scope}:${sessionSegment}:${key}`;
+  const tenantCandidate =
+    context.session?.organizationId ?? context.session?.userId;
+  const tenantSegment = tenantCandidate ? String(tenantCandidate) : "anonymous";
+  return `${scope}:${sanitizeSegment(tenantSegment)}:${sanitizeSegment(sessionSegment)}:${key}`;
 };
 
 const withStorage = () => getRuntime().storage;
@@ -128,4 +137,47 @@ export const getToolUsageSnapshot = async (
     "session",
   );
   return metrics?.tools[toolName];
+};
+
+type StoredSessionMetadata = {
+  sessionId: string;
+  userId?: string;
+  organizationId?: string;
+  tier: SessionMetadata["tier"];
+  connectedAt: string;
+  lastSeenAt: string;
+};
+
+const sessionMetadataKey = (sessionId: string): string => {
+  return `${SESSION_METADATA_SCOPE}:${sessionId}`;
+};
+
+export const persistSessionMetadata = async (
+  session: Pick<SessionMetadata, "tier" | "userId" | "organizationId"> & { sessionId: string },
+  event: "connect" | "disconnect",
+): Promise<void> => {
+  const now = new Date().toISOString();
+  const storage = withStorage();
+  const key = sessionMetadataKey(session.sessionId);
+
+  const existing = await storage.get<StoredSessionMetadata>(key);
+  const connectedAt = existing?.connectedAt ?? now;
+
+  const payload: StoredSessionMetadata = {
+    sessionId: session.sessionId,
+    tier: session.tier,
+    userId: session.userId,
+    organizationId: session.organizationId,
+    connectedAt: event === "connect" ? now : connectedAt,
+    lastSeenAt: now,
+  };
+
+  await storage.set(key, payload, 1000 * 60 * 60 * 6);
+};
+
+export const getPersistedSessionMetadata = async (
+  sessionId: string,
+): Promise<StoredSessionMetadata | null> => {
+  const storage = withStorage();
+  return storage.get<StoredSessionMetadata>(sessionMetadataKey(sessionId));
 };

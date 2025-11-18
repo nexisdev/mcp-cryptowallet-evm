@@ -2,28 +2,102 @@
   "$schema": "https://railway.app/railway.schema.json",
   "defaultEnv": "production",
   "defaultService": "fastmcp-http",
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info",
+        "LOG_PRETTY": "false",
+        "MCP_ALLOW_HTTP": "true",
+        "MCP_ALLOW_STDIO": "false",
+        "MCP_TRANSPORT": "httpstream",
+        "MCP_HTTP_ENDPOINT": "/mcp",
+        "FASTMCP_STATELESS": "false",
+        "STATUS_SERVER_ENABLED": "true",
+        "STATUS_SERVER_HOST": "0.0.0.0",
+        "STATUS_SERVER_PORT": "8090",
+        "STATUS_DEPENDENCY_CACHE_TTL_MS": "15000",
+        "STATUS_SERVER_TIMEOUT_MS": "5000",
+        "STATUS_SERVICE_TIMEOUT": "5",
+        "STATUS_SERVICE_WARMUP": "1",
+        "FASTMCP_STORAGE_NAMESPACE": "mcp-cryptowallet",
+        "PROVIDER_URL": "https://eth.llamarpc.com",
+        "BSC_PROVIDER_URL": "https://bsc-dataseed.binance.org",
+        "WORMHOLE_ENDPOINT": "https://api.testnet.wormhole.com",
+        "DEBANK_ENDPOINT": "https://openapi.debank.com",
+        "CRYPTOPANIC_ENDPOINT": "https://cryptopanic.com",
+        "WEB3RESEARCH_ENDPOINT": "https://api.coingecko.com",
+        "CRYPTOPROJECTS_ENDPOINT": "https://api.llama.fi",
+        "PUMPSWAP_QUOTE_ENDPOINT": "https://quote-api.jup.ag",
+        "PUMPSWAP_PRICE_ENDPOINT": "https://price.jup.ag",
+        "PUMPSWAP_TOKEN_ENDPOINT": "https://tokens.jup.ag",
+        "PUMPSWAP_DEFAULT_SLIPPAGE_BPS": "50",
+        "DEFI_AGGREGATOR_URL": "http://44.252.136.98",
+        "ASTER_BASE_URL": "https://fapi.asterdex.com",
+        "MCP_DEFAULT_TIER": "free",
+        "MCP_API_TOKENS": "",
+        "STATUS_SERVICE_API_KEY": "",
+        "FASTAPI_LAYER_VERSION": "1.0.0"
+      }
+    }
+  },
   "services": {
     "fastmcp-http": {
       "source": ".",
       "installCommand": "npm ci",
       "buildCommand": "npm run build",
-      "startCommand": "HOST=:: MCP_TRANSPORT=httpstream MCP_HTTP_ENDPOINT=/mcp node build/index.js",
+      "startCommand": "HOST=0.0.0.0 MCP_TRANSPORT=httpstream MCP_HTTP_ENDPOINT=/mcp node build/index.js",
       "env": {
-        "NODE_ENV": "production",
-        "STATUS_SERVER_ENABLED": "true",
-        "STATUS_SERVER_HOST": "::",
-        "STATUS_SERVER_PORT": "8090"
-      }
+        "NODE_ENV": "${{ env.NODE_ENV }}",
+        "LOG_LEVEL": "${{ env.LOG_LEVEL }}",
+        "LOG_PRETTY": "${{ env.LOG_PRETTY }}",
+        "FASTMCP_STORAGE_NAMESPACE": "${{ env.FASTMCP_STORAGE_NAMESPACE }}",
+        "STATUS_SERVER_ENABLED": "${{ env.STATUS_SERVER_ENABLED }}",
+        "STATUS_SERVER_HOST": "${{ env.STATUS_SERVER_HOST }}",
+        "STATUS_SERVER_PORT": "${{ env.STATUS_SERVER_PORT }}",
+        "STATUS_DEPENDENCY_CACHE_TTL_MS": "${{ env.STATUS_DEPENDENCY_CACHE_TTL_MS }}",
+        "STATUS_SERVER_TIMEOUT_MS": "${{ env.STATUS_SERVER_TIMEOUT_MS }}",
+        "PROVIDER_URL": "${{ env.PROVIDER_URL }}",
+        "BSC_PROVIDER_URL": "${{ env.BSC_PROVIDER_URL }}",
+        "WORMHOLE_ENDPOINT": "${{ env.WORMHOLE_ENDPOINT }}",
+        "DEBANK_ENDPOINT": "${{ env.DEBANK_ENDPOINT }}",
+        "CRYPTOPANIC_ENDPOINT": "${{ env.CRYPTOPANIC_ENDPOINT }}",
+        "WEB3RESEARCH_ENDPOINT": "${{ env.WEB3RESEARCH_ENDPOINT }}",
+        "CRYPTOPROJECTS_ENDPOINT": "${{ env.CRYPTOPROJECTS_ENDPOINT }}",
+        "PUMPSWAP_QUOTE_ENDPOINT": "${{ env.PUMPSWAP_QUOTE_ENDPOINT }}",
+        "PUMPSWAP_PRICE_ENDPOINT": "${{ env.PUMPSWAP_PRICE_ENDPOINT }}",
+        "PUMPSWAP_TOKEN_ENDPOINT": "${{ env.PUMPSWAP_TOKEN_ENDPOINT }}",
+        "PUMPSWAP_DEFAULT_SLIPPAGE_BPS": "${{ env.PUMPSWAP_DEFAULT_SLIPPAGE_BPS }}",
+        "DEFI_AGGREGATOR_URL": "${{ env.DEFI_AGGREGATOR_URL }}",
+        "ASTER_BASE_URL": "${{ env.ASTER_BASE_URL }}",
+        "MCP_DEFAULT_TIER": "${{ env.MCP_DEFAULT_TIER }}",
+        "MCP_API_TOKENS": "${{ env.MCP_API_TOKENS }}",
+        "FASTMCP_STATELESS": "${{ env.FASTMCP_STATELESS }}",
+        "REDIS_URL": "${{ redis.REDIS_URL }}",
+        "MCP_TRANSPORT": "${{ env.MCP_TRANSPORT }}",
+        "MCP_HTTP_ENDPOINT": "${{ env.MCP_HTTP_ENDPOINT }}",
+        "MCP_ALLOW_HTTP": "${{ env.MCP_ALLOW_HTTP }}",
+        "MCP_ALLOW_STDIO": "${{ env.MCP_ALLOW_STDIO }}"
+      },
+      "healthcheckPath": "/health"
     },
     "fastapi-status": {
       "source": "external/fastapi-layer",
       "installCommand": "pip install -r requirements.txt",
-      "startCommand": "uvicorn app.main:app --host :: --port $PORT",
+      "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
       "env": {
         "STATUS_SERVICE_BASE_URL": "http://fastmcp-http.railway.internal:8090",
-        "STATUS_SERVICE_TIMEOUT": "5",
-        "STATUS_SERVICE_WARMUP": "1"
-      }
+        "STATUS_SERVICE_TIMEOUT": "${{ env.STATUS_SERVICE_TIMEOUT }}",
+        "STATUS_SERVICE_WARMUP": "${{ env.STATUS_SERVICE_WARMUP }}",
+        "STATUS_SERVICE_API_KEY": "${{ env.STATUS_SERVICE_API_KEY }}",
+        "FASTAPI_HOST": "0.0.0.0",
+        "FASTAPI_PORT": "9000",
+        "FASTAPI_LAYER_VERSION": "${{ env.FASTAPI_LAYER_VERSION }}"
+      },
+      "healthcheckPath": "/health"
+    },
+    "redis": {
+      "plugin": "redis"
     }
   }
 }

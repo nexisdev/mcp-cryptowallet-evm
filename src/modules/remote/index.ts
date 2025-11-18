@@ -9,7 +9,11 @@ import type {
 import type { Content } from "fastmcp";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { SessionMetadata } from "../../server/types.js";
-import { applyToolMiddleware, defaultToolMiddlewares } from "../../core/middleware.js";
+import {
+  applyToolMiddleware,
+  defaultToolMiddlewares,
+  type ToolResult,
+} from "../../core/middleware.js";
 import type { RemoteServerConfig } from "../../core/config.js";
 import type { AppLogger } from "../../core/logging.js";
 
@@ -77,7 +81,7 @@ const createRemoteClient = async (
     return { client, transport, config };
   } catch (error) {
     await transport.close().catch(() => {
-      // ignore transport close failure on initialization error
+      // Ignore transport close failure when the initial connection fails.
     });
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -101,7 +105,10 @@ const renderContent = (content: Content[]): string => {
   for (const block of content) {
     if (block.type === "text") {
       parts.push(block.text);
-    } else if (block.type === "image" || block.type === "audio") {
+      continue;
+    }
+
+    if (block.type === "image" || block.type === "audio") {
       parts.push(
         JSON.stringify(
           {
@@ -113,20 +120,22 @@ const renderContent = (content: Content[]): string => {
           2,
         ),
       );
-    } else if (block.type === "resource") {
-      parts.push(JSON.stringify(block.resource, null, 2));
-    } else {
-      parts.push(JSON.stringify(block, null, 2));
+      continue;
     }
+
+    if (block.type === "resource") {
+      parts.push(JSON.stringify(block.resource, null, 2));
+      continue;
+    }
+
+    parts.push(JSON.stringify(block, null, 2));
   }
 
   return parts.join("\n\n");
 };
 
 const adaptToolName = (prefix: string, name: string): string => {
-  const normalizedPrefix = prefix.endsWith("_")
-    ? prefix.slice(0, -1)
-    : prefix;
+  const normalizedPrefix = prefix.endsWith("_") ? prefix.slice(0, -1) : prefix;
   return `${normalizedPrefix}_${name}`.replace(/\s+/g, "_").toLowerCase();
 };
 
@@ -156,45 +165,57 @@ const registerRemoteTool = (
 
   const executeWithMiddleware = applyToolMiddleware<ToolArgs>(
     proxiedName,
-    async (args, context) => {
+    async (args, context): Promise<ToolResult> => {
       try {
         const result = (await handle.client.callTool({
           name: tool.name,
           arguments: args,
         })) as CallToolResult;
 
-        const remoteContent = Array.isArray(result.content)
+        const remoteContent: Content[] = Array.isArray(result.content)
           ? (result.content as unknown as Content[])
           : [];
+        const structured = result.structuredContent as
+          | Record<string, unknown>
+          | undefined;
 
         if (result.isError) {
-          const structured = result.structuredContent;
-          const structuredMessage =
+          let structuredMessage: string | undefined;
+          if (
             structured &&
             typeof structured === "object" &&
             "message" in structured &&
             typeof (structured as { message?: unknown }).message === "string"
-              ? (structured as { message?: string }).message
-              : undefined;
-          const fallbackMessage =
-            remoteContent.length > 0 ? renderContent(remoteContent) : undefined;
+          ) {
+            structuredMessage = (structured as { message: string }).message;
+          }
+          const fallback = remoteContent.length > 0 ? renderContent(remoteContent) : undefined;
 
           throw new UserError(
             structuredMessage ??
-              fallbackMessage ??
+              fallback ??
               `Remote tool ${tool.name} returned an error.`,
           );
         }
 
-        if (result.structuredContent) {
-          return JSON.stringify(result.structuredContent, null, 2);
+        if (structured) {
+          const contentBlocks =
+            remoteContent.length > 0
+              ? remoteContent
+              : [
+                  {
+                    type: "text" as const,
+                    text: JSON.stringify(structured, null, 2),
+                  },
+                ];
+          return {
+            content: contentBlocks,
+            structuredContent: structured,
+          };
         }
 
         if (remoteContent.length > 0) {
-          const rendered = renderContent(remoteContent);
-          return rendered.length > 0
-            ? rendered
-            : "Remote tool executed successfully but returned non-text content.";
+          return { content: remoteContent };
         }
 
         return "Remote tool executed successfully but returned no content.";
@@ -222,8 +243,20 @@ const registerRemoteTool = (
     description: describeTool(tool, handle.config),
     annotations: tool.annotations,
     parameters: asStandardSchema(tool.inputSchema),
-    execute: async (args: unknown, context) =>
-      executeWithMiddleware(args as ToolArgs, context),
+    execute: async (args: unknown, context) => {
+      const result = await executeWithMiddleware(args as ToolArgs, context);
+      if (typeof result === "string") {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: result,
+            },
+          ],
+        };
+      }
+      return result;
+    },
   });
 };
 
@@ -265,9 +298,14 @@ const registerRemotePrompt = (
           segments.push(result.description);
         }
         for (const message of result.messages) {
-          segments.push(
-            renderContent([message.content as unknown as Content]),
-          );
+          const rawContent = message.content as unknown;
+          const blocks: Content[] = Array.isArray(rawContent)
+            ? (rawContent as unknown as Content[])
+            : [rawContent as Content];
+          const rendered = renderContent(blocks);
+          if (rendered.length > 0) {
+            segments.push(rendered);
+          }
         }
         return segments.filter((segment) => segment.length > 0).join("\n\n");
       } catch (error) {
@@ -291,17 +329,62 @@ const registerRemotePrompt = (
 export const registerRemoteServers = async (
   server: FastMCP<SessionMetadata>,
   logger: AppLogger,
-  configs: RemoteServerConfig[],
-): Promise<RemoteRegistrationOutcome[]> => {
+  configs: ReadonlyArray<RemoteServerConfig>,
+): Promise<{
+  outcomes: RemoteRegistrationOutcome[];
+  dispose: () => Promise<void>;
+}> => {
   if (configs.length === 0) {
-    return [];
+    return {
+      outcomes: [],
+      dispose: async () => {},
+    };
   }
 
   const outcomes: RemoteRegistrationOutcome[] = [];
+  const handles: RemoteClientHandle[] = [];
+  let disposed = false;
+
+  const dispose = async (): Promise<void> => {
+    if (disposed) {
+      return;
+    }
+    disposed = true;
+
+    await Promise.allSettled(
+      handles.map(async (handle) => {
+        try {
+          await handle.client.close();
+        } catch (error) {
+          logger.warn(
+            {
+              remoteServer: handle.config.id,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            "[remote] client close failed",
+          );
+        }
+
+        try {
+          await handle.transport.close();
+        } catch (error) {
+          logger.warn(
+            {
+              remoteServer: handle.config.id,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            "[remote] transport close failed",
+          );
+        }
+      }),
+    );
+  };
 
   for (const config of configs) {
     try {
       const handle = await createRemoteClient(config, logger);
+      handles.push(handle);
+
       const toolsResult = await handle.client.listTools({});
       const tools = toolsResult.tools ?? [];
 
@@ -353,5 +436,8 @@ export const registerRemoteServers = async (
     }
   }
 
-  return outcomes;
+  return {
+    outcomes,
+    dispose,
+  };
 };

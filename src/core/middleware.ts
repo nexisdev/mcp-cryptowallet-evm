@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { UserError } from "fastmcp";
 import type { ContentResult } from "fastmcp";
-import { recordToolUsage } from "./sessionStore.js";
+import { persistSessionMetadata, recordToolUsage } from "./sessionStore.js";
 import { getStatusMonitor } from "../server/status/statusMonitor.js";
 import type { ServerContext, UsageTier } from "../server/types.js";
 
@@ -60,6 +60,22 @@ export const applyToolMiddleware = <
     };
 
     return dispatch(0);
+  };
+};
+
+export const normalizeStringArgsMiddleware = <
+  TArgs,
+  TContext extends GenericContext = GenericContext,
+>(): ToolMiddleware<TArgs, TContext> => {
+  return async ({ args, next }: MiddlewareParams<TArgs, TContext>) => {
+    if (args && typeof args === "object" && !Array.isArray(args)) {
+      Object.entries(args as Record<string, unknown>).forEach(([key, value]) => {
+        if (typeof value === "string") {
+          (args as Record<string, unknown>)[key] = value.trim();
+        }
+      });
+    }
+    return next();
   };
 };
 
@@ -157,6 +173,23 @@ export const metricsMiddleware = <TArgs, TContext extends GenericContext = Gener
           sessionId,
         });
       });
+      if (sessionId) {
+        void persistSessionMetadata(
+          {
+            sessionId,
+            tier: context.session?.tier ?? "free",
+            userId: context.session?.userId,
+            organizationId: context.session?.organizationId,
+          },
+          "disconnect",
+        ).catch((error: unknown) => {
+          context.log.warn("[metrics] Failed to persist session heartbeat", {
+            tool: name,
+            error: error instanceof Error ? error.message : String(error),
+            sessionId,
+          });
+        });
+      }
 
       return result;
     } catch (error) {
@@ -170,6 +203,25 @@ export const metricsMiddleware = <TArgs, TContext extends GenericContext = Gener
           sessionId,
         });
       });
+
+      if (sessionId) {
+        void persistSessionMetadata(
+          {
+            sessionId,
+            tier: context.session?.tier ?? "free",
+            userId: context.session?.userId,
+            organizationId: context.session?.organizationId,
+          },
+          "disconnect",
+        ).catch((storageError: unknown) => {
+          context.log.warn("[metrics] Failed to persist failed session heartbeat", {
+            tool: name,
+            error:
+              storageError instanceof Error ? storageError.message : String(storageError),
+            sessionId,
+          });
+        });
+      }
 
       throw error;
     }
@@ -198,7 +250,7 @@ export const tierGuardMiddleware = <
       return next();
     }
 
-    const sessionTier = (context.session?.tier ?? "free") as UsageTier;
+    const sessionTier: UsageTier = context.session?.tier ?? "free";
     const sessionRank = tierOrdering[sessionTier] ?? 0;
     const requiredRank = tierOrdering[requiredTier] ?? 0;
 
@@ -272,6 +324,12 @@ export const progressSafetyMiddleware = <TArgs, TContext extends GenericContext 
   TContext
 > => {
   return async ({ context, next }: MiddlewareParams<TArgs, TContext>) => {
+    try {
+      await context.reportProgress({ progress: 5, total: 100 });
+    } catch {
+      // Ignore progress errors; clients may not supply a progress token.
+    }
+
     const result = await next();
 
     try {
@@ -288,6 +346,7 @@ export const defaultToolMiddlewares = <TArgs, TContext extends GenericContext = 
   TArgs,
   TContext
 >[] => [
+  normalizeStringArgsMiddleware<TArgs, TContext>(),
   statusMetricsMiddleware<TArgs, TContext>(),
   telemetryMiddleware<TArgs, TContext>(),
   metricsMiddleware<TArgs, TContext>(),

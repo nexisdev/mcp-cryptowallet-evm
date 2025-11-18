@@ -9,28 +9,41 @@ This inventory covers every FastMCP tool currently registered by `src/createServ
 - **Authentication tiers**: bearer tokens parsed from `MCP_API_TOKENS` determine `tier`, `userId`, and `organizationId` injected into tool context for telemetry and policy enforcement.
 - **Middleware stack**: telemetry, usage metrics, progress reporting, and error boundaries wrap every tool by default.
 
-## Remote MCP Integrations (Kukapay Catalog)
+## Remote MCP Proxy Modules
 
-The server can now proxy additional Kukapay MCP servers via FastMCP composition. Enable any integration by exporting the matching environment variables before launch:
+These integrations piggyback on external FastMCP servers. Provide the corresponding `*_MCP_HTTP_URL` (and optional `_AUTH_TOKEN` or `_HEADERS`) before starting the gateway; unset prefixes are skipped with a warning.
 
-| Repo | Env Prefix | Tool Prefix | Notes |
-| --- | --- | --- | --- |
-| `findblock-mcp` | `FINDBLOCK_MCP` | `findblock_*` | Block lookup by timestamp and RPC routing. |
-| `pumpfun-wallets-mcp` | `PUMPFUN_WALLETS_MCP` | `pumpfun_*` | Pump.fun wallet analytics (requires `DUNE_API_KEY`). |
-| `honeypot-detector-mcp` | `HONEYPOT_DETECTOR_MCP` | `honeypot_*` | Token risk analysis and honeypot detection. |
-| `ens-mcp` | `ENS_MCP` | `ens_*` | ENS resolution, reverse lookups, metadata. |
-| `chainlist-mcp` | `CHAINLIST_MCP` | `chainlist_*` | EVM chain catalogue and RPC discovery. |
-| `rug-check-mcp` | `RUG_CHECK_MCP` | `rugcheck_*` | RugCheck token audits and safety scores. |
-| `nft-analytics-mcp` | `NFT_ANALYTICS_MCP` | `nftanalytics_*` | NFT floor price and collection stats. |
-| `crypto-projects-mcp` | `CRYPTO_PROJECTS_MCP` | `cproj_*` | Advanced DefiLlama protocol analytics (remote variant). |
-| `solana-launchpads-mcp` | `SOLANA_LAUNCHPADS_MCP` | `launchpads_*` | Solana launchpad discovery and filtering. |
-| `memecoin-radar-mcp` | `MEMECOIN_RADAR_MCP` | `memecoin_*` | Trending memecoin scouting with sentiment signals. |
-| `crypto-whitepapers-mcp` | `CRYPTO_WHITEPAPERS_MCP` | `whitepapers_*` | Whitepaper search and PDF retrieval as resources. |
-| `token-minter-mcp` | `TOKEN_MINTER_MCP` | `tokenminter_*` | Guided ERC20/ERC721 deployment flows. |
-| `whattimeisit-mcp` | `WHATTIMEISIT_MCP` | `clock_*` | Multi-timezone utilities and scheduling helpers. |
-| `nearby-search-mcp` | `NEARBY_SEARCH_MCP` | `nearby_*` | Location-based search using configured Maps API keys. |
+### Alpha Arena (`alpha_*`)
+- **Prerequisites**: `ALPHA_ARENA_MCP_HTTP_URL`, Hyperliquid API wallet/private key on the remote server.
+- **Tools**: `alpha_place_order`, `alpha_close_position`, `alpha_cancel_open_orders`, `alpha_account_info`, `alpha_market_state`.
+- **Prompts**: `alpha_nof1_system_prompt`, `alpha_nof1_user_prompt` for persona-driven trading briefs.
 
-Set `<PREFIX>_HTTP_URL` (or `<PREFIX>_URL`) to the remote server endpoint, plus optional `<PREFIX>_AUTH_TOKEN` or `<PREFIX>_HEADERS` for authentication. Tools inherit tier enforcement through the global middleware stack and are discoverable via `list_tools` once enabled.
+### DEX Pools (`dex_*`)
+- **Prerequisites**: `DEX_POOLS_MCP_HTTP_URL`, CoinGecko API entitlements if required by the upstream.
+- **Tools**: liquidity discovery endpoints such as `dex_get_supported_networks`, `dex_get_new_pools`, `dex_get_trending_pools`, `dex_search_pools`.
+
+### Polymarket Predictions (`poly_*`)
+- **Prerequisites**: `POLYMARKET_PREDICTIONS_MCP_HTTP_URL` (public).
+- **Tools**: `poly_search_events`, `poly_get_events`, `poly_get_markets`.
+- **Prompt**: `poly_analyze_market` assembles market insights for a given slug.
+
+### Hyperliquid Info (`hyperinfo_*`)
+- **Prerequisites**: `HYPERLIQUID_INFO_MCP_HTTP_URL`, Hyperliquid credentials on the remote deployment.
+- **Coverage**: user states, open orders, trade/funding history, metadata (`hyperinfo_get_user_state`, `hyperinfo_get_l2_snapshot`, `hyperinfo_get_perp_metadata`, etc.).
+- **Prompt**: `hyperinfo_analyze_positions` summarises account posture.
+
+### Freqtrade Control (`freq_*`)
+- **Prerequisites**: `FREQTRADE_MCP_HTTP_URL` pointing at the bot’s REST API, plus any auth headers.
+- **Tools**: operational controls such as `freq_fetch_profit`, `freq_fetch_config`, `freq_place_trade`, `freq_start_bot`.
+- **Prompts**: `freq_analyze_trade`, `freq_trading_strategy`.
+
+### Hyperliquid Whale Alert (`whale_*`)
+- **Prerequisites**: `HYPERLIQUID_WHALEALERT_MCP_HTTP_URL`.
+- **Tools/Prompts**: `whale_get_whale_alerts` with summary prompt `whale_summarize_whale_activity`.
+
+### Wallet Inspector (`inspector_*`)
+- **Prerequisites**: `WALLET_INSPECTOR_MCP_HTTP_URL`, optional provider keys.
+- **Tools**: wallet analytics (`inspector_get_wallet_balance`, `inspector_get_wallet_activity`, `inspector_get_wallet_transactions`).
 - **Observability endpoints**: `/health`, `/status`, and `/uptime` are now served from the status server (`STATUS_SERVER_*` env) with queue depth, session counts, and dependency probe data.
 - **FastAPI layer**: optional companion service (`external/fastapi-layer`) republishes the observability data with Swagger/OpenAPI for REST monitoring clients.
 
@@ -44,6 +57,7 @@ Set `<PREFIX>_HTTP_URL` (or `<PREFIX>_URL`) to the remote server endpoint, plus 
 | `debank_portfolio_digest` | Portfolio digest highlighting net worth and exposure. |
 | `aave_health_review` | Summarise Aave account health and mitigation options. |
 | `defi_trade_plan` | Draft an execution checklist for aggregator-based swaps. |
+| `defi_swap_quote_brief` | Summarise structured swap quotes and highlight execution checkpoints. |
 | `alpha_nof1_system_prompt` | Expert trader system prompt proxied from Alpha Arena. |
 | `alpha_nof1_user_prompt` | Market + account situational prompt for Alpha Arena. |
 | `poly_analyze_market` | Template for analysing a Polymarket market by slug. |
@@ -79,6 +93,7 @@ Set `<PREFIX>_HTTP_URL` (or `<PREFIX>_URL`) to the remote server endpoint, plus 
 
 - **Provider config**: `defi_provider_set` stores aggregator base URL and CoinGecko API key in session storage; useful when targeting self-hosted routers.
 - **Quoting**: `defi_swap_price` previews output amounts, while `defi_swap_quote` returns executable calldata for on-chain submission.
+- **Structured quoting**: `defi_swap_quote_structured` mirrors the raw quote response and adds machine-readable payloads (`structuredContent.quote`) for downstream automation or verification pipelines.
 - **Discovery**: `defi_supported_chains`, `defi_liquidity_sources`, and `defi_supported_dexes` catalogue available liquidity venues across networks; responses cached 1–5 minutes depending on scope.
 - **Analytics**: `defi_token_price`, `defi_trending_pools`, and `defi_coingecko_networks` expose CoinGecko onchain insights; conversions between wei and display units handled by `defi_convert_wei_to_unit` / `defi_convert_unit_to_wei`.
 

@@ -22,3 +22,4 @@
 | 2025-11-17T11:38:00Z | Added DeFi test coverage | Introduced Jest suite for DeFi aggregator tools with mocked service clients to validate pricing, discovery, and conversion flows. |
 | 2025-11-17T11:39:00Z | Added Aave test coverage | Added Aave handler tests using mocked graph responses; verified user health queries and provider configuration wiring. |
 | 2025-11-17T11:40:00Z | Synced docs with manifests | Updated `tool-usage.md`, `README.md`, and `tools.json` to catalogue DeFi/Aave tools alongside new tests. |
+| 2025-11-17T11:47:00Z | DeFi registry refactor | Eliminated `any` leakage from DeFi tool registration, tightened conversion telemetry payloads, refreshed remote proxy cleanup, and verified build/lint/test flows. |

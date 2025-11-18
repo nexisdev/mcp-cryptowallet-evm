@@ -1,4 +1,4 @@
-import { UserError } from "fastmcp";
+import { UserError, type SerializableValue } from "fastmcp";
 import { ethers } from "ethers";
 import { formatKeyValue } from "../wallet/utils.js";
 import {
@@ -97,6 +97,61 @@ export const getSwapQuoteHandler = async (
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new UserError(`Failed to fetch swap quote: ${message}`);
+  }
+};
+
+export const getSwapQuoteStructuredHandler = async (
+  args: {
+    chainId: number;
+    buyToken: string;
+    sellToken: string;
+    sellAmount: string;
+    taker?: string;
+    slippageBps?: number;
+  },
+  context: FastMCPContext,
+): Promise<{
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent: Record<string, SerializableValue>;
+}> => {
+  const client = await createAggregatorClient(context);
+  try {
+    const data = await client.getSwapQuote(args);
+    const summary = formatKeyValue("Executable swap quote (structured)", {
+      chainId: args.chainId,
+      buyToken: args.buyToken,
+      sellToken: args.sellToken,
+      sellAmount: args.sellAmount,
+      slippageBps: args.slippageBps ?? "default",
+      taker: args.taker ?? "not set",
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: [
+            summary,
+            "",
+            "Return payload persisted in structuredContent.quote",
+          ].join("\n"),
+        },
+      ],
+      structuredContent: {
+        quote: data as SerializableValue,
+        metadata: {
+          chainId: args.chainId,
+          buyToken: args.buyToken,
+          sellToken: args.sellToken,
+          sellAmount: args.sellAmount,
+          slippageBps: args.slippageBps ?? null,
+          taker: args.taker ?? null,
+        },
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new UserError(`Failed to fetch structured swap quote: ${message}`);
   }
 };
 
@@ -228,10 +283,17 @@ export const getTrendingPoolsHandler = async (
 
 export const convertWeiToFormattedHandler = (
   args: { amount: string; decimals: number },
-  _context?: unknown,
+  context?: FastMCPContext,
 ): string => {
   try {
     const formatted = ethers.utils.formatUnits(args.amount, args.decimals);
+    const debugPayload: SerializableValue = {
+      namespace: DEFI_NAMESPACE,
+      wei: args.amount,
+      decimals: args.decimals,
+      formatted,
+    };
+    context?.log.debug("[defi] conversion: wei_to_unit", debugPayload);
     return formatKeyValue("Wei to unit conversion", {
       wei: args.amount,
       decimals: args.decimals,
@@ -245,10 +307,17 @@ export const convertWeiToFormattedHandler = (
 
 export const convertFormattedToWeiHandler = (
   args: { amount: string; decimals: number },
-  _context?: unknown,
+  context?: FastMCPContext,
 ): string => {
   try {
     const wei = ethers.utils.parseUnits(args.amount, args.decimals).toString();
+    const debugPayload: SerializableValue = {
+      namespace: DEFI_NAMESPACE,
+      value: args.amount,
+      decimals: args.decimals,
+      wei,
+    };
+    context?.log.debug("[defi] conversion: unit_to_wei", debugPayload);
     return formatKeyValue("Unit to wei conversion", {
       value: args.amount,
       decimals: args.decimals,

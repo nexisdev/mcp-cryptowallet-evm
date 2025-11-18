@@ -61,7 +61,29 @@ export const startServer = async (server: FastMCP<SessionMetadata>): Promise<voi
     process.once("SIGINT", gracefulShutdown);
   }
 
-  if (transport === "http" || transport === "httpstream") {
+  const normalizedTransport: "stdio" | "httpStream" = (() => {
+    switch (transport) {
+      case "http":
+      case "httpstream":
+      case "http-stream":
+      case "stream":
+        return "httpStream";
+      case "stdio":
+      case "pipe":
+      case "stdio-stream":
+        return "stdio";
+      default:
+        logger.warn(
+          {
+            value: transport,
+          },
+          "[fastmcp] unsupported MCP_TRANSPORT value, defaulting to stdio",
+        );
+        return "stdio";
+    }
+  })();
+
+  if (normalizedTransport === "httpStream") {
     if (!config.transport.allowHttp) {
       throw new Error("HTTP transport is disabled by configuration (MCP_ALLOW_HTTP=false)");
     }
@@ -75,6 +97,8 @@ export const startServer = async (server: FastMCP<SessionMetadata>): Promise<voi
     const endpoint = normalizedEndpoint as `/${string}`;
     const stateless = asBoolean(process.env.FASTMCP_STATELESS);
 
+    const enableJsonResponse = asBoolean(process.env.MCP_HTTP_JSON_RESPONSE);
+
     await server.start({
       transportType: "httpStream",
       httpStream: {
@@ -82,6 +106,7 @@ export const startServer = async (server: FastMCP<SessionMetadata>): Promise<voi
         port,
         endpoint,
         stateless,
+        enableJsonResponse,
       },
     });
 
@@ -90,9 +115,19 @@ export const startServer = async (server: FastMCP<SessionMetadata>): Promise<voi
       port,
       endpoint,
       stateless,
+      enableJsonResponse,
     }, "[fastmcp] HTTP Stream transport ready");
 
     return;
+  }
+
+  if (normalizedTransport !== "stdio") {
+    logger.warn(
+      {
+        value: transport,
+      },
+      "[fastmcp] falling back to stdio transport",
+    );
   }
 
   if (!config.transport.allowStdio) {

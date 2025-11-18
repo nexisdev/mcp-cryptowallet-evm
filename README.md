@@ -280,29 +280,29 @@ The server will register tools prefixed with `alpha_*` after startup.
 
 ## Railway Deployment
 
-This repository includes [`railway.json`](railway.json) describing two services:
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new?template=https://github.com/dcSpark/mcp-cryptowallet-evm)
 
-1. **`fastmcp-http`** – the FastMCP Node server
-   - Installs with `npm ci`, builds with `npm run build`, and starts with HTTP Stream enabled.
-   - Binds to IPv6 (`HOST=::`) so the FastAPI service can reach the status endpoint over Railway’s private network.
-   - Exposes `/mcp` on the Railway-assigned `$PORT`; `/health` and `/ready` remain available for probes.
+[`railway.json`](railway.json) now describes a complete three-service stack that Railway can provision in a single run:
+- **`fastmcp-http`** – builds the FastMCP server with `npm ci && npm run build`, runs HTTP Stream transport on the platform port, and exposes `/mcp` plus `/health` for probes.
+- **`fastapi-status`** – launches the FastAPI companion from `external/fastapi-layer` and consumes the FastMCP status endpoint over Railway’s private DNS (`http://fastmcp-http.railway.internal:8090`).
+- **`redis`** – provisions the managed Redis plugin and injects its connection string into `fastmcp-http` via the `${{redis.REDIS_URL}}` interpolation so storage is stateful out of the box.
 
-2. **`fastapi-status`** – the FastAPI observability layer
-   - Lives in `external/fastapi-layer`
-   - Uses the internal DNS name `http://fastmcp-http.railway.internal:8090` to fetch status snapshots.
-   - Serves Swagger, `/status`, `/uptime`, and `/health` on its own public port/domain.
+Environment-level defaults (RPC endpoints, logging flags, FastAPI tuning) are carried in the `production` block of the config, while service-level variables pull from the shared namespace using Railway’s variable template syntax (`${{namespace.KEY}}`).citeturn14search0
 
-### Deploy Steps
-1. Install the Railway CLI (`npm i -g @railway/cli`) and authenticate with `railway login`.
-2. Create a project and run `railway up` from the repo root. Railway will read `railway.json`, build both services, and prompt for variable inputs.
-3. Populate secrets via `railway variables set` or the dashboard (see [Environment Variables](#environment-variables)).
-4. Assign custom domains if needed—typically one for the MCP endpoint and one for the status API.
-5. Configure health checks:
-   - `fastmcp-http`: `/ready`
-   - `fastapi-status`: `/health`
-6. (Optional) Run the CLI probe in cron or CI: `npm run build && STATUS_SERVER_BASE_URL=https://status.example.com npm run monitoring:probe -- --strict`.
+### One-click deployment flow
+1. Click the button above or visit the Railway dashboard and import this repository; the platform automatically detects `railway.json` and prepares all three services.
+2. When prompted, set secrets such as `PRIVATE_KEY`, upstream API keys, and optional MCP federation URLs listed in [.env.example](.env.example). Leave `MCP_API_TOKENS` empty to start in anonymous `free` tier mode.
+3. Trigger the first deploy. Railway will sequentially stand up Redis, the FastMCP service, and the FastAPI status API. Internal service discovery means the FastAPI process can reach FastMCP via `fastmcp-http.railway.internal` without extra networking work.citeturn15search0
+4. After both application services are healthy, assign custom domains if you need public endpoints (e.g. `/mcp` for MCP clients and `/status` for operators).
+5. Run a post-deploy smoke test from CI or your terminal:
+   ```bash
+   railway run --service fastmcp-http npm run monitoring:probe -- --strict
+   ```
+   or curl the FastAPI `/health` endpoint on the assigned domain to confirm cross-service wiring.
 
-For manual deployment guidance and screenshots, see [`monitoring/README.md`](monitoring/README.md) and the Railway-focused section in this README’s [Integration Examples](#integration-examples).
+Redis credentials and other managed resource variables are automatically injected into dependent services, so no manual copying of connection strings is required.citeturn16search0
+
+Need to tweak behaviour per environment? Add new environments under `environments.{name}.variables` and Railway will merge those overrides on the next deployment. The monitoring guide in [`monitoring/README.md`](monitoring/README.md) covers health-check wiring and alerting once production traffic is flowing.
 
 ---
 
@@ -360,4 +360,4 @@ The default `.env.example` now reflects all production-ready settings needed for
 ---
 
 ## License
-MIT © dcSpark / Nexis-AI
+MIT © Nexis Labs

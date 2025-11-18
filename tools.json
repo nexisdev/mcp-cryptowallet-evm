@@ -50,6 +50,7 @@
         "defi_provider_info",
         "defi_swap_price",
         "defi_swap_quote",
+        "defi_swap_quote_structured",
         "defi_supported_chains",
         "defi_liquidity_sources",
         "defi_token_price",

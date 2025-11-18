@@ -1,6 +1,5 @@
 import { FastMCP } from "fastmcp";
-import { loadConfig, type AppConfig } from "../core/config.js";
-import type { RemoteServerConfig } from "../core/config.js";
+import { loadConfig, type AppConfig, type RemoteServerConfig } from "../core/config.js";
 import { initializeRuntime } from "../core/runtime.js";
 import { registerWalletModule } from "../modules/wallet/index.js";
 import { registerBscModule } from "../modules/bsc/index.js";
@@ -19,10 +18,12 @@ import { registerAsterModule } from "../modules/aster/index.js";
 import { registerRemoteServers } from "../modules/remote/index.js";
 import { initializeStatusMonitor } from "./status/statusMonitor.js";
 import { registerDefaultDependencies } from "./status/dependencies.js";
+import { persistSessionMetadata } from "../core/sessionStore.js";
 
 export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
   const runtime = initializeRuntime();
   const config: AppConfig = loadConfig();
+  const remoteServerConfigs: ReadonlyArray<RemoteServerConfig> = config.remoteServers;
 
   const serviceName = "mcp-cryptowallet-evm-fastmcp";
   const serviceVersion = "2.1.0";
@@ -68,6 +69,23 @@ export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
     if (!originalSessionId) {
       session.sessionId = resolvedSessionId;
     }
+    if (session.sessionId) {
+      void persistSessionMetadata(
+        {
+          sessionId: session.sessionId,
+          tier: config.defaultTier,
+        },
+        "connect",
+      ).catch((error: unknown) => {
+        runtime.logger.warn(
+          {
+            sessionId: session.sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "[session] failed to persist connection metadata",
+        );
+      });
+    }
     runtime.logger.debug(
       {
         sessionId: resolvedSessionId,
@@ -78,6 +96,23 @@ export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
 
   server.on("disconnect", ({ session }) => {
     monitor.recordSessionDisconnected(session.sessionId);
+    if (session.sessionId) {
+      void persistSessionMetadata(
+        {
+          sessionId: session.sessionId,
+          tier: config.defaultTier,
+        },
+        "disconnect",
+      ).catch((error: unknown) => {
+        runtime.logger.warn(
+          {
+            sessionId: session.sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "[session] failed to persist disconnect metadata",
+        );
+      });
+    }
     runtime.logger.debug(
       {
         sessionId: session.sessionId,
@@ -86,11 +121,60 @@ export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
     );
   });
 
-  const remoteOutcomes = await registerRemoteServers(
+  const {
+    outcomes: remoteOutcomes,
+    dispose: disposeRemoteClients,
+  } = await registerRemoteServers(
     server,
     runtime.logger,
-    config.remoteServers as RemoteServerConfig[],
+    remoteServerConfigs,
   );
+
+  const ensureRemoteDisposed = (() => {
+    let invoked = false;
+    return async (): Promise<void> => {
+      if (invoked) {
+        return;
+      }
+      invoked = true;
+      await disposeRemoteClients();
+    };
+  })();
+
+  const logDisposalFailure = (hook: string, error: unknown): void => {
+    const details =
+      error instanceof Error
+        ? {
+            message: error.message,
+            ...(error.stack ? { stack: error.stack } : {}),
+          }
+        : { message: String(error) };
+    runtime.logger.error(
+      {
+        hook,
+        ...details,
+      },
+      "[remote] disposal failed",
+    );
+  };
+
+  process.once("beforeExit", () => {
+    void ensureRemoteDisposed().catch((error) => logDisposalFailure("beforeExit", error));
+  });
+  process.once("exit", () => {
+    void ensureRemoteDisposed().catch((error) => logDisposalFailure("exit", error));
+  });
+  (["SIGINT", "SIGTERM"] as const).forEach((signal) => {
+    process.once(signal, () => {
+      void ensureRemoteDisposed().catch((error) => logDisposalFailure(signal, error));
+    });
+  });
+
+  const originalStop = server.stop.bind(server);
+  server.stop = async () => {
+    await ensureRemoteDisposed();
+    await originalStop();
+  };
 
   remoteOutcomes.forEach((outcome) => {
     if (outcome.status === "registered") {

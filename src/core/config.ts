@@ -218,6 +218,62 @@ const REMOTE_SERVER_DEFINITIONS: Array<{
     tags: ["documents"],
   },
   {
+    id: "deepResearch",
+    label: "Deep Research",
+    toolPrefix: "deepresearch",
+    envPrefix: "DEEP_RESEARCH_MCP",
+    tags: ["research", "automation"],
+  },
+  {
+    id: "context7",
+    label: "Context7 Memory",
+    toolPrefix: "context7",
+    envPrefix: "CONTEXT7_MCP",
+    tags: ["memory", "context"],
+  },
+  {
+    id: "omnisearch",
+    label: "OmniSearch",
+    toolPrefix: "omni",
+    envPrefix: "OMNISEARCH_MCP",
+    tags: ["search", "news"],
+  },
+  {
+    id: "agentCommunication",
+    label: "Agent Communication Hub",
+    toolPrefix: "agentcomm",
+    envPrefix: "AGENT_COMMUNICATION_MCP",
+    tags: ["collaboration", "agents"],
+  },
+  {
+    id: "octocode",
+    label: "Octocode",
+    toolPrefix: "octocode",
+    envPrefix: "OCTOCODE_MCP",
+    tags: ["automation", "debugging"],
+  },
+  {
+    id: "baseL2",
+    label: "Base L2 Toolkit",
+    toolPrefix: "base",
+    envPrefix: "BASE_MCP",
+    tags: ["base", "bridge"],
+  },
+  {
+    id: "okxTrading",
+    label: "OKX Trading",
+    toolPrefix: "okx",
+    envPrefix: "OKX_MCP",
+    tags: ["trading", "cex"],
+  },
+  {
+    id: "cryptoOrderbook",
+    label: "Crypto Orderbook",
+    toolPrefix: "orderbook",
+    envPrefix: "CRYPTO_ORDERBOOK_MCP",
+    tags: ["marketdata"],
+  },
+  {
     id: "tokenMinter",
     label: "Token Minter",
     toolPrefix: "tokenminter",
@@ -246,9 +302,10 @@ const parseOptionalJson = (raw: string | undefined): Record<string, string> | un
   }
 
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.entries(parsed).reduce<Record<string, string>>((acc, [key, value]) => {
+      const record = parsed as Record<string, unknown>;
+      return Object.entries(record).reduce<Record<string, string>>((acc, [key, value]) => {
         if (typeof value === "string") {
           acc[key] = value;
         }

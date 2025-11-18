@@ -17,6 +17,7 @@ This guide summarises how to expose the FastMCP crypto wallet server to downstre
        "Authorization": "Bearer YOUR_TOKEN"
      }
      ```
+   - For JSON responses in ChatGPT, set `MCP_HTTP_JSON_RESPONSE=true` alongside `MCP_TRANSPORT=http` before starting the server.
 3. Start a new chat, press **+ → Developer Mode**, enable the connector.
 
 ### Deep Research Requirements
@@ -89,4 +90,3 @@ Restart the client to pick up the new server.
 - Gate HTTP access behind a reverse proxy and terminate TLS there.
 - Use Bearer tokens or JWT verification (FastMCP `auth` config) when exposing the server publicly.
 - Never ship private keys inside MCP prompts or connector metadata.
-

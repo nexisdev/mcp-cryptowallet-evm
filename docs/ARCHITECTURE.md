@@ -28,7 +28,7 @@ This document inventories the current FastMCP crypto wallet server, maps FastMCP
 | **Tools** | Zod-validated tools for wallet, BSC, Wormhole, DeBank, DeFi Aggregator, Aave, CryptoPanic, Web3 Research, Crypto Projects, PumpSwap, Aster. All responses normalized to text content via shared helper. | Continue harmonising annotations (`readOnlyHint`) across data providers for richer metadata. |
 | **Logging** | `telemetryMiddleware` emits structured `info/error` logs with request IDs; sensitive args redacted. | Expand log metadata with tier/user context once auth is introduced. |
 | **Progress** | `progressSafetyMiddleware` guarantees 100% progress callbacks. | Add progressive updates for long-running bridge transfers. |
-| **Caching** | Route & feed lookups cached via `createResponseCacheMiddleware` with module-specific namespaces. | Evaluate distributed cache (Redis) prior to horizontal scaling. |
+| **Caching** | Route & feed lookups cached via `createResponseCacheMiddleware` with module-specific namespaces; per-tier TTL multipliers/overrides configurable via env. | Evaluate distributed cache (Redis) prior to horizontal scaling. |
 | **Context / Storage** | FastMCP context leveraged for per-request logging & progress; `keyv` available for persistence. | Implement multi-tenant storage bindings (user/org) once auth model defined. |
 | **Prompts** | Wallet prompts plus new data-intel templates (see §4). | Add per-tier prompt variants if plan-based messaging differs. |
 | **Middleware** | Telemetry + progress applied globally; caching applied per-tool where beneficial. | Introduce auth / rate-limit middleware after identity model is finalised. |
@@ -58,6 +58,7 @@ All modules adhere to shared Zod schema helpers and tool result normalization, e
 - **Quality gates**: `npm run lint`, `npm run test`, and `npm run build` required before merging or releasing.
 - **Telemetry**: monitor FastMCP structured logs (Pino) for tool invocations, durations, and errors; forward logs to central observability stack (e.g., Loki, Datadog).
 - **Integration tests**: run OpenAI Responses API smoke test (see `docs/CONNECTORS.md`) per release candidate.
+- **Remote MCP validation**: after setting `*_MCP_HTTP_URL` env vars, start the server in stdio mode and run `npx -y @modelcontextprotocol/inspector npm run start` to confirm `list_tools` exposes the expected namespaced prefixes for each remote server.
 - **Rollout strategy**:
   1. Deploy to staging with dedicated API keys; validate ChatGPT Developer Mode handshake and tool invocation.
   2. Enable cache and middleware metrics; capture baseline latency & error rates.

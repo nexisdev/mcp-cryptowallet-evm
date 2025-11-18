@@ -78,6 +78,19 @@ npm test          # Jest suites for every module
 npm run lint      # ESLint + TypeScript rules
 ```
 
+### Verify Remote MCP Integrations
+1. Populate the relevant `*_MCP_HTTP_URL` and optional `*_MCP_AUTH_TOKEN` variables in your `.env` (see the [Environment Variables](#environment-variables) table).
+2. Start the server in stdio mode so remote connections can initialise (watch for `[remote] integration completed` logs):
+   ```bash
+   MCP_TRANSPORT=stdio npm run start
+   ```
+3. In a separate terminal, inspect the active tool surface with the Model Context Protocol inspector:
+   ```bash
+   npx -y @modelcontextprotocol/inspector npm run start
+   ```
+   At the inspector prompt run `list_tools` – remote tools appear under their configured prefixes (e.g., `deepresearch_*`, `context7_*`, `omni_tavily_search`).
+4. Repeat the process for each environment (staging, production) whenever new remote servers or credentials are introduced.
+
 Additional developer notes live in [`docs/fastmcp-migration-plan.md`](docs/fastmcp-migration-plan.md) and [`tool-usage.md`](tool-usage.md).
 
 ---
@@ -114,6 +127,7 @@ wormhole_supported_routes, wormhole_transfer_status, wormhole_supported_chains
 ### DeFi Aggregator (`defi_*`)
 ```
 defi_provider_set, defi_provider_info, defi_swap_price, defi_swap_quote,
+defi_swap_quote_structured,
 defi_supported_chains, defi_liquidity_sources, defi_token_price,
 defi_coingecko_networks, defi_supported_dexes, defi_trending_pools,
 defi_convert_wei_to_unit, defi_convert_unit_to_wei
@@ -322,6 +336,8 @@ Need to tweak behaviour per environment? Add new environments under `environment
 | `AAVE_SUBGRAPH_URL`, `THEGRAPH_API_KEY` | Aave subgraph endpoint and API key. | see `.env.example` |
 | `DEFI_AGGREGATOR_URL` | Custom aggregator base (fallback to defaults if unset). | _unset_ |
 | `LOG_LEVEL`, `LOG_PRETTY` | Pino logger configuration. | `info`, `false` |
+| `CACHE_TTL_MULTIPLIER_FREE`, `CACHE_TTL_MULTIPLIER_PRO`, `CACHE_TTL_MULTIPLIER_ULTRA` | Optional per-tier cache multipliers (e.g., `0.5` for fresher Pro results). | `1` |
+| `CACHE_TTL_FREE_MS`, `CACHE_TTL_PRO_MS`, `CACHE_TTL_ULTRA_MS` | Absolute TTL overrides (take precedence over multipliers) for cache entries per tier. | _unset_ |
 | `REDIS_URL`, `FASTMCP_STORAGE_NAMESPACE` | Persistent storage configuration. | `_unset_`, `mcp-cryptowallet` |
 | `MCP_API_TOKENS` | Comma-separated list of bearer tokens (`token:userId:orgId:tier`). | _unset_ |
 | `MCP_DEFAULT_TIER` | Tier applied when no token is present. | `free` |

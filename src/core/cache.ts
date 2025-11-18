@@ -1,6 +1,7 @@
 import { Context } from "fastmcp";
 import type { SessionMetadata } from "../server/types.js";
 import { ToolResult, ToolMiddleware } from "./middleware.js";
+import { loadConfig } from "./config.js";
 
 type CacheContext = Context<SessionMetadata>;
 
@@ -51,11 +52,23 @@ export const createResponseCacheMiddleware = <TArgs>({
     }
 
     const result = await next();
+    const config = loadConfig();
+    const tier = context.session?.tier ?? config.defaultTier;
+    const overrideTtl = tier ? config.cachePolicy.ttlOverrides[tier] : undefined;
+    const multiplier = tier ? config.cachePolicy.ttlMultipliers[tier] ?? 1 : 1;
+    const effectiveTtl = overrideTtl ?? Math.max(1, Math.round(ttlMs * multiplier));
     bucket.set(key, {
       value: result,
-      expiresAt: now + ttlMs,
+      expiresAt: now + effectiveTtl,
     });
-    context.log.debug("[cache] miss", { namespace, key });
+    context.log.debug("[cache] miss", {
+      namespace,
+      key,
+      tier,
+      ttlMs: effectiveTtl,
+      override: overrideTtl,
+      multiplier,
+    });
     return result;
   };
 };

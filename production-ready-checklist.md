@@ -144,7 +144,7 @@ _For multi-tenant, tiered usage (Free / Pro / Ultra) with OpenAI MCP compatibili
 - [ ] Cache keys are deterministic and include:
   - [x] Tool name
   - [x] Input parameters (normalized)
-  - [ ] User/org ID where required
+  - [x] User/org ID where required
   - [ ] Tier where behavior differs by plan
 - [ ] Cache store chosen (for example: Redis) with defined TTLs per tier:
   - [ ] Free: longer cache TTLs to reduce cost.

@@ -173,6 +173,46 @@ These modules are dynamically populated from external MCP servers via HTTP Strea
 - **Analytics**: `inspector_get_wallet_balance`, `inspector_get_wallet_activity`, `inspector_get_wallet_transactions`.
 - **Typical flow**: pair with local wallet module to reconcile on-chain activity with custodial state.
 
+### Deep Research (`deepresearch_*`)
+- **Endpoint**: `DEEP_RESEARCH_MCP_HTTP_URL` with optional bearer token via `DEEP_RESEARCH_MCP_AUTH_TOKEN`.
+- **Tools**: `deepresearch_deep-research` performs iterative SERP expansion, reliability scoring, and composes Markdown reports with structured metadata.
+- **Usage**: Provide `query`, `depth` (1–5), and `breadth` (1–5) to scope research; progress notifications stream during execution.
+
+### Context7 Documentation (`context7_*`)
+- **Endpoint**: `CONTEXT7_MCP_HTTP_URL`; supply API key through `CONTEXT7_MCP_AUTH_TOKEN` or headers for higher rate limits.
+- **Tools**: `context7_resolve-library-id` normalizes package names, followed by `context7_get-library-docs` to pull paginated documentation snippets.
+- **Flow**: Always resolve the library ID first; optional `topic` and `page` parameters narrow documentation focus.
+
+### OmniSearch (`omni_*`)
+- **Endpoint**: `OMNISEARCH_MCP_HTTP_URL`; configure provider keys (Tavily, Brave, Kagi, Perplexity, Firecrawl, Jina) via the upstream server.
+- **Tools**: Search providers surface as `omni_tavily_search`, `omni_brave_search`, `omni_kagi_search`; content processors expose `*_process` variants (Firecrawl, Jina, Kagi summarizer); enrichment appears as `*_enhance`.
+- **Provider detection**: Tools auto-enable based on upstream API keys—call `list_tools` to confirm which providers are active for the session.
+
+### Agent Communication Hub (`agentcomm_*`)
+- **Endpoint**: `AGENT_COMMUNICATION_MCP_HTTP_URL`; persistent state stored wherever the remote server’s `AGENT_COMM_DATA_DIR` points.
+- **Tools**: `agentcomm_list_rooms`, `agentcomm_create_room`, `agentcomm_enter_room`, `agentcomm_wait_for_messages`, `agentcomm_post_message`, `agentcomm_get_status`, `agentcomm_clear_room_messages`.
+- **Collaboration**: Use room-based workflow to coordinate multiple agents, leveraging long-polling for near-real-time message delivery.
+
+### Octocode GitHub Intelligence (`octocode_*`)
+- **Endpoint**: `OCTOCODE_MCP_HTTP_URL`; set upstream GitHub authentication (CLI or PAT) before enabling.
+- **Tools**: GitHub code search, repository discovery, repo-structure inspection, PR search, and file-content retrieval functions exposed with `octocode_`-prefixed names.
+- **Research commands**: Remote server also exposes slash-style prompts (`/research`, `/kudos`, `/use`) that orchestrate complex workflows through the same tool surface.
+
+### Base Network Toolkit (`base_*`)
+- **Endpoint**: `BASE_MCP_HTTP_URL`; requires Coinbase Cloud API credentials plus `SEED_PHRASE` for signing operations.
+- **Tool families**: Wallet, ERC-20, NFT, contract, onramp, Morpho lending, and OpenRouter helpers are exposed with `base_` prefixes—run `list_tools` after connecting to enumerate the precise action set.
+- **Notes**: Without a seed phrase the upstream falls back to read-only AgentKit operations; ensure API quota covers desired actions.
+
+### OKX Trading (`okx_*`)
+- **Endpoint**: `OKX_MCP_HTTP_URL`; propagate REST credentials via `OKX_MCP_AUTH_TOKEN` or custom headers.
+- **Tools**: DEX swap quotes, liquidity snapshots, token catalogs, bridge helpers, and execution endpoints surface with `okx_` prefixes—review `list_tools` to see which modules (DEX vs. bridge) are active.
+- **Compliance**: Respect OKX rate limits—middleware records failure telemetry to help spot throttling.
+
+### Crypto Orderbook Analytics (`orderbook_*`)
+- **Endpoint**: `CRYPTO_ORDERBOOK_MCP_HTTP_URL`.
+- **Tools**: Snapshot, comparison, and stream utilities for consolidated order books are registered with `orderbook_` prefixes; exact coverage depends on the upstream deployment.
+- **Use cases**: Pair with on-chain execution modules to gauge liquidity depth, slippage, and spread momentum before committing orders.
+
 ### Ethereum Validators Queue (`validators_*`)
 - **Status**: Repository `kukapay/ethereum-validators-queue-mcp` is currently unavailable, so proxy registration is skipped by default. Environment keys remain reserved (`ETHEREUM_VALIDATORS_QUEUE_MCP_HTTP_URL`) for future enablement.
 
@@ -384,6 +424,7 @@ Tests covering each module live under `tests/modules/*`, with fetch mocks illust
 | `defi_provider_info` | Inspect provider configuration. | `{}` |
 | `defi_swap_price` | Fetch indicative swap pricing. | `{"chainId":1,"buyToken":"0xTokenB","sellToken":"0xTokenA","sellAmount":"1000000000000000000"}` |
 | `defi_swap_quote` | Retrieve executable quote payload. | `{"chainId":1,"buyToken":"0xTokenB","sellToken":"0xTokenA","sellAmount":"1000000000000000000","slippageBps":100}` |
+| `defi_swap_quote_structured` | Return swap quote plus `structuredContent.quote` JSON for downstream automation. | `{"chainId":1,"buyToken":"0xTokenB","sellToken":"0xTokenA","sellAmount":"1000000000000000000","slippageBps":100}` |
 | `defi_supported_chains` | List aggregator-supported chains. | `{}` |
 | `defi_liquidity_sources` | Enumerate DEX sources for chain. | `{"chainId":42161}` |
 | `defi_token_price` | Query CoinGecko onchain token prices. | `{"network":"ethereum","addresses":"0xTokenA,0xTokenB","includeMarketCap":true}` |

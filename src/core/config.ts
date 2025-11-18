@@ -75,6 +75,10 @@ export type AppConfig = {
     allowHttp: boolean;
     allowStdio: boolean;
   };
+  cachePolicy: {
+    ttlMultipliers: Record<UsageTier, number>;
+    ttlOverrides: Partial<Record<UsageTier, number>>;
+  };
 };
 
 const REMOTE_SERVER_DEFINITIONS: Array<{
@@ -319,6 +323,28 @@ const parseOptionalJson = (raw: string | undefined): Record<string, string> | un
   return undefined;
 };
 
+const parseMultiplier = (raw: string | undefined): number | undefined => {
+  if (!raw) {
+    return undefined;
+  }
+  const value = Number(raw);
+  if (Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return undefined;
+};
+
+const parseAbsoluteTtl = (raw: string | undefined): number | undefined => {
+  if (!raw) {
+    return undefined;
+  }
+  const value = Number(raw);
+  if (Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+  return undefined;
+};
+
 const buildRemoteServers = (): RemoteServerConfig[] => {
   return REMOTE_SERVER_DEFINITIONS.flatMap((definition) => {
     const baseUrl =
@@ -368,11 +394,26 @@ export const loadConfig = (): AppConfig => {
     allowStdio: (process.env.MCP_ALLOW_STDIO ?? "true").toLowerCase() !== "false",
   };
 
+  const multiplierFallback = 1;
+  const cachePolicy = {
+    ttlMultipliers: {
+      free: parseMultiplier(process.env.CACHE_TTL_MULTIPLIER_FREE) ?? multiplierFallback,
+      pro: parseMultiplier(process.env.CACHE_TTL_MULTIPLIER_PRO) ?? multiplierFallback,
+      ultra: parseMultiplier(process.env.CACHE_TTL_MULTIPLIER_ULTRA) ?? multiplierFallback,
+    },
+    ttlOverrides: {
+      free: parseAbsoluteTtl(process.env.CACHE_TTL_FREE_MS),
+      pro: parseAbsoluteTtl(process.env.CACHE_TTL_PRO_MS),
+      ultra: parseAbsoluteTtl(process.env.CACHE_TTL_ULTRA_MS),
+    },
+  } as const;
+
   return {
     defaultTier,
     tokens,
     remoteServers,
     transport,
+    cachePolicy,
   };
 };
 

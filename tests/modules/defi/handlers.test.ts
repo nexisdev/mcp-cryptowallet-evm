@@ -102,8 +102,14 @@ describe("defi module tools", () => {
     for (const tool of defiToolDefinitions) {
       const args = sampleArgs[tool.name] ?? {};
       const result = await tool.execute(args, context);
-      expect(typeof result).toBe("string");
-      expect(result.length).toBeGreaterThan(0);
+      if (typeof result === "string") {
+        expect(result.length).toBeGreaterThan(0);
+      } else if (result && typeof result === "object") {
+        expect(Array.isArray(result.content)).toBe(true);
+        expect(result.content.length).toBeGreaterThan(0);
+      } else {
+        throw new Error(`Unexpected tool result for ${tool.name}`);
+      }
     }
   });
 

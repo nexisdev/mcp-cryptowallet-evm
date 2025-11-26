@@ -71,7 +71,7 @@
         "DEFI_AGGREGATOR_URL": "${{ env.DEFI_AGGREGATOR_URL }}",
         "ASTER_BASE_URL": "${{ env.ASTER_BASE_URL }}",
         "MCP_DEFAULT_TIER": "${{ env.MCP_DEFAULT_TIER }}",
-        "MCP_API_TOKENS": "${{ env.MCP_API_TOKENS }}",
+        "MCP_API_TOKENS": "93d51e7e21e90840094e3611ab45b2b8da779ac34b591655d2800b119c916ac587f5f011efb7caec6bc408b83f8dfd418bc9d26040b664ef925b24f101ea8921:admin:nexis-admin:ultra",
         "FASTMCP_STATELESS": "${{ env.FASTMCP_STATELESS }}",
         "REDIS_URL": "${{ redis.REDIS_URL }}",
         "MCP_TRANSPORT": "${{ env.MCP_TRANSPORT }}",

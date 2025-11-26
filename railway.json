@@ -77,7 +77,8 @@
         "MCP_TRANSPORT": "${{ env.MCP_TRANSPORT }}",
         "MCP_HTTP_ENDPOINT": "${{ env.MCP_HTTP_ENDPOINT }}",
         "MCP_ALLOW_HTTP": "${{ env.MCP_ALLOW_HTTP }}",
-        "MCP_ALLOW_STDIO": "${{ env.MCP_ALLOW_STDIO }}"
+        "MCP_ALLOW_STDIO": "${{ env.MCP_ALLOW_STDIO }}",
+        "MCP_HTTP_JSON_RESPONSE": "true"
       },
       "healthcheckPath": "/health"
     },

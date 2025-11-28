@@ -51,6 +51,7 @@ These integrations piggyback on external FastMCP servers. Provide the correspond
 
 | Prompt | Purpose |
 | --- | --- |
+| `defiyields_analyze_yields` | Analyzes a list of yield pools and provides a summary of the findings. |
 | `wallet_transaction_confirmation` | Summarise an ETH transaction for human approval. |
 | `wallet_troubleshooting_checklist` | Pre-flight checks when wallet operations fail. |
 | `wormhole_bridge_briefing` | Bridge plan recap with Wormhole safety checklist. |
@@ -448,3 +449,69 @@ Tests covering each module live under `tests/modules/*`, with fetch mocks illust
 - All tool executions apply telemetry, usage metrics, progress reporting, and error boundary middleware automatically.
 - Response caching is applied to read-heavy tools (Wormhole status, DeBank queries, aggregator analytics) with module-specific TTLs.
 - Session-scoped storage keys follow the pattern `<namespace>:<sessionId>:<key>` enabling per-session isolation.
+
+## DeFi Yields Module (`defiyields_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `defiyields_get_pools` | Fetch DeFi yield pools from DefiLlama. | `{"blockchain":"Ethereum"}` |
+
+## Lista Vaults Module (`lista_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `lista_list_vaults` | List vaults for a given zone. | `{"zone":"classic"}` |
+| `lista_deposit` | Deposit assets to a vault. | `{"vaultAddress":"0x...","assetAmount":10}` |
+| `lista_redeem` | Redeem shares for assets. | `{"vaultAddress":"0x...","shareAmount":10}` |
+| `lista_withdraw` | Withdraw assets from a vault. | `{"vaultAddress":"0x...","assetAmount":10}` |
+
+## Stargate Bridge Module (`stargate_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `stargate_list_chains` | List supported chains. | `{}` |
+| `stargate_list_tokens` | List bridgeable tokens. | `{"srcChainKey":"ethereum","srcToken":"0x..."}` |
+| `stargate_get_quotes` | Get bridge quotes. | `{"srcChainKey":"ethereum","dstChainKey":"optimism","srcToken":"0x...","dstToken":"0x...","srcAmount":100,"dstAmountMin":99}` |
+| `stargate_bridge` | Execute bridge transfer. | `{"srcChainKey":"ethereum","dstChainKey":"optimism","srcToken":"0x...","dstToken":"0x...","srcAmount":100,"dstAmountMin":99}` |
+
+## Crypto Funds Module (`cryptofunds_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `cryptofunds_search` | Search funds with filters. | `{"limit":10,"sortBy":"tier"}` |
+| `cryptofunds_get_all` | Get all funds (mapped). | `{}` |
+| `cryptofunds_get_basic` | Get basic fund metrics. | `{"fundId":123}` |
+| `cryptofunds_get_detail` | Get detailed fund metrics. | `{"fundId":123}` |
+
+## Polymarket Module (`polymarket_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `polymarket_search_events` | Search events. | `{"q":"election"}` |
+| `polymarket_get_events` | Get events list. | `{"limit":10}` |
+| `polymarket_get_markets` | Get markets list. | `{"limit":10}` |
+
+## Crypto Stocks Module (`cryptostocks_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `cryptostocks_list` | List crypto-related stocks. | `{}` |
+| `cryptostocks_price` | Get real-time stock price. | `{"ticker":"COIN"}` |
+| `cryptostocks_history` | Get historical stock prices. | `{"ticker":"COIN","days":30}` |
+
+
+## DeFi Trading Module (Native) (`defitrading_*`)
+
+| Tool | Purpose | Example Input |
+| --- | --- | --- |
+| `defitrading_get_swap_price` | Get the price for a token swap. | `{"chainId":1,"buyToken":"0x...","sellToken":"0x...","sellAmount":"1000"}` |
+| `defitrading_get_swap_quote` | Get a quote for a token swap, including transaction data. | `{"chainId":1,"buyToken":"0x...","sellToken":"0x...","sellAmount":"1000","taker":"0x..."}` |
+| `defitrading_execute_swap` | Execute a swap using the quote data. Signs and broadcasts. | `{"quoteData":{...}}` |
+| `defitrading_get_gasless_quote` | Get a quote for a gasless token swap. | `{"chainId":1,"buyToken":"0x...","sellToken":"0x...","sellAmount":"1000"}` |
+| `defitrading_submit_gasless_swap` | Submit a gasless swap using the quote data. | `{"quoteData":{...}}` |
+| `defitrading_get_portfolio_tokens` | Get tokens in a portfolio. | `{"addresses":["0x..."]}` |
+| `defitrading_get_portfolio_balances` | Get balances of tokens in a portfolio. | `{"addresses":["0x..."]}` |
+| `defitrading_get_portfolio_transactions` | Get transactions for a portfolio. | `{"addresses":["0x..."]}` |
+| `defitrading_get_token_price` | Get token price from CoinGecko. | `{"network":"ethereum","addresses":"0x..."}` |
+| `defitrading_get_trending_pools` | Get trending pools from CoinGecko. | `{"duration":"24h"}` |
+| `defitrading_search_pools` | Search for pools on CoinGecko. | `{"query":"ETH-USDC"}` |

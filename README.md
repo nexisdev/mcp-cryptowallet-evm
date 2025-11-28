@@ -133,6 +133,15 @@ defi_coingecko_networks, defi_supported_dexes, defi_trending_pools,
 defi_convert_wei_to_unit, defi_convert_unit_to_wei
 ```
 
+### DeFi Trading (Native) (`defitrading_*`)
+```
+defitrading_get_swap_price, defitrading_get_swap_quote, defitrading_execute_swap,
+defitrading_get_gasless_quote, defitrading_submit_gasless_swap,
+defitrading_get_portfolio_tokens, defitrading_get_portfolio_balances,
+defitrading_get_portfolio_transactions, defitrading_get_token_price,
+defitrading_get_trending_pools, defitrading_search_pools
+```
+
 ### DeBank Portfolio (`debank_*`)
 ```
 debank_provider_set, debank_user_total_balance, debank_user_tokens,
@@ -171,9 +180,39 @@ aave_analyze_liquidity, aave_user_positions, aave_user_health, aave_namespace_in
 aster_kline, aster_order_book_ticker, aster_order_book, aster_recent_trades
 ```
 
-### Remote MCP Federation (`remote/*`)
-Any environment variables defined per [`src/core/config.ts`](src/core/config.ts) (for example `ALPHA_ARENA_MCP_HTTP_URL`) will proxy the remote server’s tools using a namespaced prefix (`alpha_*`, `dex_*`, `whale_*`, etc.).
+### Lista Vaults (`lista_*`)
+```
+lista_list_vaults, lista_deposit, lista_redeem, lista_withdraw
+```
 
+### Stargate Bridge (`stargate_*`)
+```
+stargate_list_chains, stargate_list_tokens, stargate_get_quotes, stargate_bridge
+```
+
+### Crypto Funds (`cryptofunds_*`)
+```
+cryptofunds_search, cryptofunds_get_all, cryptofunds_get_basic, cryptofunds_get_detail
+```
+
+### Polymarket (`polymarket_*`)
+```
+polymarket_search_events, polymarket_get_events, polymarket_get_markets
+```
+
+### Crypto Stocks (`cryptostocks_*`)
+```
+cryptostocks_list, cryptostocks_price, cryptostocks_history
+```
+
+### Advanced DeFi Workflows (Composite) (`workflow_*`)
+```
+workflow_omnichain_yield_farmer, workflow_leverage_looper, workflow_delta_neutral_yield,
+workflow_allowance_revoker, workflow_mint_sniper
+```
+
+### Remote MCP Federation (`remote/*`)
+Any environment variables defined per [`src/core/config.ts`](src/core/config.ts) (for example `ALPHA_ARENA_MCP_HTTP_URL`) will proxy the remote server’s tools using a namespaced prefix (`alpha_*`, `dex_*`, `whale_*`, etc.). Set `*_MCP_HTTP_URL` (or `*_MCP_URL`) plus optional `*_MCP_AUTH_TOKEN` / `*_MCP_HEADERS` JSON to enable.
 A machine-readable description of the active tool set is also exported in [`tools.json`](tools.json).
 
 ---
@@ -190,6 +229,32 @@ The server registers reusable prompt templates consumable via MCP `list_prompts`
 | `debank_portfolio_digest` | Snapshot of holdings with suggested actions. | `address`, `netWorthUsd?`, `topProtocols?` |
 | `aave_health_review` | Highlights borrow/collateral posture and mitigations. | `address`, `healthFactor?`, `totalBorrowsUSD?`, `totalCollateralUSD?` |
 | `defi_trade_plan` | Multi-step plan for executing a swap through the aggregator. | `chainId`, `sellToken`, `buyToken`, `sellAmount` |
+| `lista_vault_strategy` | Analyze Lista DAO vaults and suggest a deposit strategy. | `zone?`, `amount?` |
+| `stargate_bridge_plan` | Plan a cross-chain transfer via Stargate. | `srcChain`, `dstChain`, `token`, `amount` |
+| `cryptofunds_analysis` | Analyze crypto funds and their portfolios. | `focus` |
+| `polymarket_event_scout` | Find and analyze prediction markets on Polymarket. | `topic` |
+| `cryptostocks_summary` | Summarize performance of crypto-related equities. | `tickers` |
+| `aster_market_depth` | Analyze order book depth and recent trades for a symbol on Aster. | `symbol`, `limit?` |
+| `bsc_transfer_checklist` | Safety checks before sending BNB or BEP-20 tokens. | `recipient`, `token`, `amount` |
+| `cryptopanic_news_digest` | Summarize latest news for a specific currency or filter. | `currency?`, `filter?` |
+| `cryptoprojects_protocol_audit` | Deep dive into a protocol's TVL and details via DefiLlama. | `slug` |
+| `pumpswap_trade_setup` | Prepare a trade on Solana via Jupiter. | `inputMint`, `outputMint`, `amount` |
+| `web3research_asset_report` | Comprehensive report on an asset using CoinGecko data. | `theme`, `budgetSol?`, `roomId?` |
+| `cross_chain_bridge_optimizer` | Find the best route to bridge assets across chains. | `asset`, `amount`, `sourceChain`, `destChain` |
+| `smart_contract_auditor` | Perform a quick security audit on a contract. | `contractAddress`, `chain` |
+| `nft_floor_sweeper` | Strategy to sweep the floor of an NFT collection. | `collection`, `maxPrice`, `count` |
+| `airdrop_farmer_route` | Generate a route for airdrop farming. | `targetProject` |
+| `health_factor_guardian` | Monitor DeFi health factor and protect against liquidation. | `protocol`, `minHealth` |
+| `evm_yield_farmer` | Find the best yield farming opportunities on EVM chains. | `chain`, `asset` |
+| `market_research_deep_dive` | Conduct a deep dive research on a specific crypto project or topic. | `topic` |
+| `evm_token_creator_guide` | Guide to creating and deploying an ERC20 token. | `name`, `symbol` |
+| `cross_chain_yield_aggregator` | Compare yields across multiple chains for a specific asset. | `asset` |
+| `project_due_diligence` | Perform due diligence on a project before investing. | `projectName` |
+| `evm_whale_watch` | Monitor large transactions on EVM chains. | `address` |
+| `yield_opportunity_alert` | Alert on new high-yield opportunities. | `minApy` |
+| `token_launch_strategy` | Strategic plan for launching a new token. | `projectType` |
+| `market_sentiment_report` | Generate a report on overall market sentiment. | |
+| `defi_protocol_analyzer` | Analyze a specific DeFi protocol's health. | `protocol` |
 
 **Prompt usage example (via `npx fastmcp`):**
 ```bash

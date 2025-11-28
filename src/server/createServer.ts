@@ -19,6 +19,12 @@ import { registerRemoteServers } from "../modules/remote/index.js";
 import { initializeStatusMonitor } from "./status/statusMonitor.js";
 import { registerDefaultDependencies } from "./status/dependencies.js";
 import { persistSessionMetadata } from "../core/sessionStore.js";
+import { registerListaModule } from "../modules/lista/index.js";
+import { registerStargateModule } from "../modules/stargate/index.js";
+import { registerCryptoFundsModule } from "../modules/cryptofunds/index.js";
+import { registerPolymarketModule } from "../modules/polymarket/index.js";
+import { registerCryptoStocksModule } from "../modules/cryptostocks/index.js";
+import { registerDefiTradingModule } from "../modules/defitrading/index.js";
 
 export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
   const runtime = initializeRuntime();
@@ -61,6 +67,12 @@ export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
   registerWeb3ResearchModule(server);
   registerCryptoProjectsModule(server);
   registerPumpSwapModule(server);
+  registerListaModule(server);
+  registerStargateModule(server);
+  registerCryptoFundsModule(server);
+  registerPolymarketModule(server);
+  registerCryptoStocksModule(server);
+  registerDefiTradingModule(server);
   registerPrompts(server);
 
   server.on("connect", ({ session }) => {
@@ -145,9 +157,9 @@ export const createServer = async (): Promise<FastMCP<SessionMetadata>> => {
     const details =
       error instanceof Error
         ? {
-            message: error.message,
-            ...(error.stack ? { stack: error.stack } : {}),
-          }
+          message: error.message,
+          ...(error.stack ? { stack: error.stack } : {}),
+        }
         : { message: String(error) };
     runtime.logger.error(
       {

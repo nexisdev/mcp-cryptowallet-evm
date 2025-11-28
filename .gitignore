@@ -17,3 +17,5 @@ coverage/
 *.pem
 *.key
 *.cert
+external_analysis/
+temp_repos/
